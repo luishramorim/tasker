@@ -3,7 +3,6 @@ import { View, ActivityIndicator } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "../config/firebaseConfig";
-
 import theme from "@/config/theme";
 import { PaperProvider } from "react-native-paper";
 
@@ -13,18 +12,17 @@ export default function Layout() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
       setLoading(false);
-      if (user) {
-        router.replace("/home"); 
+      if (currentUser) {
+        router.replace("/home");
       } else {
-        router.replace("/login"); 
+        router.replace("/login");
       }
     });
-
     return () => unsubscribe();
-  }, []);
+  }, [router]);
 
   if (loading) {
     return (
@@ -46,6 +44,7 @@ export default function Layout() {
         ) : (
           <>
             <Stack.Screen name="home" />
+            <Stack.Screen name="profile" />
           </>
         )}
       </Stack>

@@ -31,12 +31,13 @@ import { getFirestore, collection, doc, onSnapshot } from "firebase/firestore";
 import { addTask } from "@/services/authService";
 import styles from "../assets/styles";
 import theme from "@/config/theme";
+import Sidebar from "@/assets/components/Sidebar";
 
 type Task = {
   id: string;
   title: string;
   description: string;
-  reminder?: string; // Reminder tratado como string
+  reminder?: string;
 };
 
 const TaskCard = ({ task }: { task: Task }) => {
@@ -44,7 +45,6 @@ const TaskCard = ({ task }: { task: Task }) => {
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
 
-  // Converte o reminder para exibir apenas a hora ou "Sem lembrete"
   const getReminderText = (reminder?: string) => {
     if (!reminder) return "Sem lembrete";
     const date = new Date(reminder);
@@ -52,9 +52,10 @@ const TaskCard = ({ task }: { task: Task }) => {
       ? "Sem lembrete"
       : date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   };
+  const router = useRouter();
 
-  return (
-    <Card style={styles.taskCard}>
+  return (  
+    <Card onPress={() => router.push("/task")} style={styles.taskCard}>
       <Card.Title
         title={task.title}
         subtitle={`Lembrete: ${getReminderText(task.reminder)}`}
@@ -72,7 +73,6 @@ const TaskCard = ({ task }: { task: Task }) => {
             <Menu.Item
               onPress={() => {
                 closeMenu();
-                // Implementar ação de excluir
               }}
               title="Excluir"
             />
@@ -93,14 +93,13 @@ export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
 
-  // Estados para data e horário
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
 
-  // Estados para o modo de pesquisa
   const [isSearch, setIsSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -128,7 +127,6 @@ export default function Home() {
     router.replace("/login");
   };
 
-  // Formata data e hora
   const formatDate = (date: Date) =>
     date.toLocaleDateString("pt-BR", { day: "numeric", month: "short" });
   const formatTime = (date: Date) =>
@@ -163,8 +161,6 @@ export default function Home() {
     }
   };
 
-  // Filtra tarefas com base na query.
-  // Se estiver no modo de pesquisa e o searchQuery estiver vazio, retorna array vazio.
   const filteredTasks =
     isSearch && searchQuery.trim() === ""
       ? []
@@ -176,8 +172,6 @@ export default function Home() {
           );
         });
 
-  // Agrupa tarefas por data (com base no campo reminder)
-  // Se não houver reminder ou for inválido, agrupa em "Algum dia"
   const groupTasks = (taskList: Task[]) =>
     taskList.reduce((groups: { [key: string]: Task[] }, task) => {
       let groupKey = "Algum dia";
@@ -206,7 +200,8 @@ export default function Home() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <KeyboardAvoidingView
+     <Sidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
+     <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
@@ -231,13 +226,13 @@ export default function Home() {
               </Appbar.Header>
             ) : (
               <Appbar.Header mode="small" style={[styles.appbar, { alignSelf: "center" }]}>
+                <Appbar.Action icon="menu" onPress={() => setSidebarOpen(true)} />
                 <Appbar.Content title="Tasker" />
                 <Appbar.Action icon="magnify" onPress={() => setIsSearch(true)} />
-                <Appbar.Action icon="account" onPress={() => {}} />
+                <Appbar.Action icon="account" onPress={() => router.push("/profile")} />
               </Appbar.Header>
             )}
 
-            {/* Lista de tarefas */}
             <View style={{ flex: 1, marginTop: Platform.OS === "web" ? 80 : 0 }}>
               {loading ? (
                 <ActivityIndicator size="large" />
@@ -261,7 +256,7 @@ export default function Home() {
                       title={groupKey}
                       id={groupKey}
                       key={groupKey}
-                      expanded={true} // Sempre aberto
+                      expanded={true} 
                     >
                       {groupedTasks[groupKey].map((task) => (
                         <TaskCard key={task.id} task={task} />
@@ -272,7 +267,6 @@ export default function Home() {
               )}
             </View>
 
-            {/* Área de criação de tarefas (somente no modo normal) */}
             {!isSearch && (
               <View
                 style={{
